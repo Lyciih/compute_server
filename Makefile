@@ -22,7 +22,7 @@ clean:
 	rm -f flow_compute_server obj/*.o obj/*.d
 
 run: 
-	./flow_compute_server 1 192.168.2.2 1230
+	./flow_compute_server 1 192.168.2.2 1230 1231 1232
 
 re:
 	make clean

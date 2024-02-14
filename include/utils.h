@@ -7,6 +7,7 @@ typedef struct {
 	int on;
 	const char* process_name;
 	int pid;
+	int color;
 } log_data_t;
 
 
