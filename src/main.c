@@ -77,24 +77,40 @@ int main(int argc, char *argv[]){
         			listen_socket_bind_address(&log_data, listen_fd, &server_addr);
         			//監聽 listen socket
         			start_listen(&log_data, listen_fd, 5); 
-        			//接受 client端連線
-        			client_t *client = accept_client(&log_data, listen_fd);
- 
-        			char buffer[] = "hi I am compute server control port";
-        			send(client->fd, buffer, sizeof(buffer), 0); 
- 
-        			//char recv_buffer[1024];
-        			//recv(client->fd, recv_buffer, sizeof(recv_buffer), 0); 
-        			//printf("%s", recv_buffer);
- 
-        			close(client->fd);
-        			free(client);
+        			
 
-				//等待其它進程結束
-				waitpid(receive_pid, &process_status, 0);
-				waitpid(present_pid, &process_status, 0);
-				waitpid(compute_pid, &process_status, 0);
-        			return 0;
+				//準備連線時需要用到的變數
+        			client_t *client = NULL;
+				char buffer[] = "hi I am compute server control port";
+				char receive_buffer[1024];
+				
+				while(1){
+					//接受 client端連線
+					client = accept_client(&log_data, listen_fd);
+					send(client->fd, buffer, sizeof(buffer), 0); 
+
+					while(1){
+						if(recv(client->fd, receive_buffer, sizeof(receive_buffer), 0) == 0){
+							printf("connect close\n");
+							break;
+						} 
+
+
+						receive_buffer[strcspn(receive_buffer, "\n")] = '\0';
+						printf("%s\n", receive_buffer);
+						
+						if(strcmp(receive_buffer, "exit") == 0){
+							close(client->fd);
+							free(client);
+
+							//等待其它進程結束
+							waitpid(receive_pid, &process_status, 0);
+							waitpid(present_pid, &process_status, 0);
+							waitpid(compute_pid, &process_status, 0);
+							return 0;
+						}
+					}
+				}
 			}
 		}
 	}

@@ -150,10 +150,17 @@ client_t* accept_client(log_data_t *log_data, int listen_fd){
 		exit(1);
 	}
 	else{
+		//取得client端 ip 和 port
+		inet_ntop(AF_INET, &(client->addr.sin_addr), client->ip, INET_ADDRSTRLEN);
+		client->port = ntohs(client->addr.sin_port);
+		
 		if(log_data->on == 1){
 			log_head(log_data);
-			printf("client accept success\n");
+			printf("client accept success: %s %d\n", client->ip, client->port);
 		}
+
+
+
 		return client;
 	}
 
