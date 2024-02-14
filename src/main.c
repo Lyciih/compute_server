@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "receive.h"
 #include "present.h"
+#include "compute.h"
 #include "network_utils.h"
 
 int main(int argc, char *argv[]){
@@ -50,7 +51,7 @@ int main(int argc, char *argv[]){
 			perror("compute child process fork fail");
 		}
 		else if(compute_pid == 0){
-			printf("I am compute process\n");
+			compute(log_data.on, argv);
 		}
 		else{
 			present_pid = fork();
@@ -92,6 +93,7 @@ int main(int argc, char *argv[]){
 				//等待其它進程結束
 				waitpid(receive_pid, &process_status, 0);
 				waitpid(present_pid, &process_status, 0);
+				waitpid(compute_pid, &process_status, 0);
         			return 0;
 			}
 		}

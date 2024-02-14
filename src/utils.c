@@ -4,6 +4,7 @@
 #define COLOR_1		"\x1b[31m"
 #define COLOR_2		"\x1b[32m"
 #define COLOR_3		"\x1b[33m"
+#define COLOR_4		"\x1b[34m"
 
 //用來印出log的各種資訊
 int log_head(log_data_t* log_data){
@@ -20,6 +21,9 @@ int log_head(log_data_t* log_data){
 				break;
 			case 3:
 				printf(COLOR_3 "%d " COLOR_RESET, log_data->pid);
+				break;
+			case 4:
+				printf(COLOR_4 "%d " COLOR_RESET, log_data->pid);
 				break;
 			default:
 				printf("%d ", log_data->pid);
