@@ -146,8 +146,9 @@ client_t* accept_client(log_data_t *log_data, int listen_fd){
 	client->fd = accept(listen_fd, (struct sockaddr *)&(client->addr), &(client->len));
 	if(client->fd == -1){
 		log_head(log_data);
+		fflush(NULL);
 		perror("client accept error");
-		exit(1);
+		return NULL;
 	}
 	else{
 		//取得client端 ip 和 port
@@ -158,8 +159,6 @@ client_t* accept_client(log_data_t *log_data, int listen_fd){
 			log_head(log_data);
 			printf("client accept success: %s %d\n", client->ip, client->port);
 		}
-
-
 
 		return client;
 	}

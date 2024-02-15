@@ -8,10 +8,15 @@
 #include "present.h"
 #include "compute.h"
 #include "network_utils.h"
+#include "signal_handle.h"
+
+
+client_t *client = NULL;
+log_data_t log_data;
+
 
 int main(int argc, char *argv[]){
 	//初始化log資訊
-	log_data_t log_data;
 	log_data.on = 0;
 	log_data.process_name = "main   ";
 	log_data.pid = getpid();
@@ -30,6 +35,7 @@ int main(int argc, char *argv[]){
 
 
 	//註冊信號事件----------------------------------------------------------------------------
+	set_signal_handle();
 
 
 	//分裂出三個子進程------------------------------------------------------------------------
@@ -81,7 +87,7 @@ int main(int argc, char *argv[]){
 
 				//準備連線時需要用到的變數
         			client_t *client = NULL;
-				char buffer[] = "hi I am compute server control port";
+				char buffer[] = "hi I am compute server control port\n";
 				char receive_buffer[1024];
 				
 				while(1){
@@ -96,12 +102,20 @@ int main(int argc, char *argv[]){
 						} 
 
 
+						//去除收到的訊息尾巴的換行或回車符
 						receive_buffer[strcspn(receive_buffer, "\n")] = '\0';
+						receive_buffer[strcspn(receive_buffer, "\r")] = '\0';
+						
 						printf("%s\n", receive_buffer);
 						
 						if(strcmp(receive_buffer, "exit") == 0){
 							close(client->fd);
 							free(client);
+
+							union sigval value;
+							value.sival_int = 0;
+							sigqueue(receive_pid, SIGRTMIN, value);
+							sigqueue(present_pid, SIGRTMIN, value);
 
 							//等待其它進程結束
 							waitpid(receive_pid, &process_status, 0);
