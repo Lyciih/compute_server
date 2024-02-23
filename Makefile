@@ -10,7 +10,7 @@ all: flow_compute_server
 
 # GMP GUN多重精度算術庫
 flow_compute_server: $(OBJS)
-	g++ $(CFLAG) -o $@ $^ -lgmp 
+	g++ $(CFLAG) -o $@ $^ -lgmp
 
 obj/%.o: src/%.c
 	g++ $(CFLAG) -c $< -o $@
@@ -22,7 +22,7 @@ clean:
 	rm -f flow_compute_server obj/*.o obj/*.d
 
 run: 
-	./flow_compute_server 1 192.168.2.2 1230 1231 1232
+	./flow_compute_server 1 192.168.2.2 1230 1231 1232 700 1024
 
 re:
 	make clean

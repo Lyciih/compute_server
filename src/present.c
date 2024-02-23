@@ -4,6 +4,10 @@
 
 extern client_t *client;
 extern log_data_t log_data;
+extern char *recv_buffer;
+extern char *send_buffer;
+extern mqd_t compute_to_present;
+extern unsigned int prio;
 
 //present進程
 int present(int log_on, char *argv[]){
@@ -18,7 +22,25 @@ int present(int log_on, char *argv[]){
 		printf("I am present process\n");
 	}
 
-	//set_signal_handle();
+
+	//消息隊列
+	if(mq_send(compute_to_present, "la", sizeof("la"), 0) == -1){
+		log_head(&log_data);
+		perror("mq_send");
+	}
+
+	if(mq_receive(compute_to_present, recv_buffer, atoi(argv[7]), &prio) == -1){
+		log_head(&log_data);
+		perror("mq_receive");
+	}
+	else{
+		log_head(&log_data);
+		printf("%s\n", recv_buffer);
+		fflush(stdout);
+	}
+
+
+
 
 	//取得 listen socket
 	int listen_fd = get_listen_socket(&log_data, 1);
@@ -30,8 +52,10 @@ int present(int log_on, char *argv[]){
 	start_listen(&log_data, listen_fd, 5);
 	
 	
-	char buffer[] = "hi I am compute server present port\n";
-	char recv_buffer[1024];
+	char buffer[] = "hi I am compute server present port";
+	char client_receive[1024];
+
+	int have_data = 0;
 	
 	while(1){
 		//接受 client端連線
@@ -40,8 +64,46 @@ int present(int log_on, char *argv[]){
 			send(client->fd, buffer, sizeof(buffer), 0);
 
 			while(1){
-				recv(client->fd, recv_buffer, sizeof(recv_buffer), 0);
-				printf("%s", recv_buffer);
+				if(have_data == 0){
+					if(mq_receive(compute_to_present, recv_buffer, atoi(argv[7]), &prio) == -1){
+						log_head(&log_data);
+						perror("mq_receive");
+					}
+					else{
+						have_data = 1;
+					}
+				}
+				else{
+					send(client->fd, "test", sizeof("test"), 0);
+					if(recv(client->fd, client_receive, atoi(argv[7]), 0) == 0){
+						log_head(&log_data);
+						fflush(stdout);
+						perror("connect close");
+						break;
+					}
+					else{
+						client_receive[strcspn(client_receive, "\n")] = '\0';
+						client_receive[strcspn(client_receive, "\r")] = '\0';
+
+						if(strcmp(client_receive, "ready") == 0){
+							if(send(client->fd, recv_buffer, atoi(argv[7]), 0) == -1){
+								log_head(&log_data);
+								perror("connect close");
+								break;
+							}
+							else{
+								have_data = 0;
+							}
+						}
+						else if(strcmp(client_receive, "exit") == 0){
+							close(client->fd);
+							
+							log_head(&log_data);
+							printf("connect close\n");
+							break;
+						}
+					}
+				}
 			}
 		}
 	}

@@ -5,6 +5,10 @@
 
 extern client_t *client;
 extern log_data_t log_data;
+extern mqd_t receive_to_compute;
+extern mqd_t compute_to_present;
+extern char *recv_buffer;
+extern char *send_buffer;
 
 
 
@@ -15,7 +19,26 @@ void signal_handle(int signal, siginfo_t *info, void *ctx){
 		close(client->fd);
 		free(client);
 	}
+
+
+	if(recv_buffer != NULL){
+		free(recv_buffer);
+	}
+
 	
+	if(send_buffer != NULL){
+		free(send_buffer);
+	}
+
+
+	if(mq_close(receive_to_compute) == -1){
+		perror("mq_close");
+	}
+	
+	if(mq_close(compute_to_present) == -1){
+		perror("mq_close");
+	}
+
 	if(log_data.on == 1){
 	log_head(&log_data);
 	printf("close\n");

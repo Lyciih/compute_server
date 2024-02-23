@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <mqueue.h>
 #include "utils.h"
 #include "network_utils.h"
 

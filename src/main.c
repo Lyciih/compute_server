@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <mqueue.h>
 #include "utils.h"
 #include "receive.h"
 #include "present.h"
@@ -13,6 +14,11 @@
 
 client_t *client = NULL;
 log_data_t log_data;
+mqd_t receive_to_compute;
+mqd_t compute_to_present;
+unsigned int prio;
+char *recv_buffer = NULL;
+char *send_buffer = NULL;
 
 
 int main(int argc, char *argv[]){
@@ -23,7 +29,7 @@ int main(int argc, char *argv[]){
 	log_data.color = 1;
 
 	//檢查參數完整性
-	if(argc < 6){
+	if(argc < 8){
 		log_head(&log_data);
 		printf("缺少參數\n");
 		exit(1);
@@ -33,9 +39,28 @@ int main(int argc, char *argv[]){
 		log_data.on = atoi(argv[1]);
 	}
 
+	//準備傳輸buffer
+	recv_buffer = (char *)malloc(atoi(argv[7]));
+	send_buffer = (char *)malloc(atoi(argv[7]));
 
 	//註冊信號事件----------------------------------------------------------------------------
 	set_signal_handle();
+
+	//建立消息隊列----------------------------------------------------------------------------
+	struct mq_attr attr;
+	attr.mq_msgsize = atoi(argv[7]);
+	attr.mq_maxmsg = atoi(argv[6]) / 2;
+
+	receive_to_compute = mq_open("/receive_to_compute", O_CREAT | O_EXCL | O_RDWR, 0666, &attr);
+	if(receive_to_compute == (mqd_t)-1){
+		perror("mq_open");
+	}
+
+	compute_to_present = mq_open("/compute_to_present", O_CREAT | O_EXCL | O_RDWR, 0666, &attr);
+	if(compute_to_present == (mqd_t)-1){
+		perror("mq_open");
+	}
+
 
 
 	//分裂出三個子進程------------------------------------------------------------------------
@@ -87,8 +112,8 @@ int main(int argc, char *argv[]){
 
 				//準備連線時需要用到的變數
         			client_t *client = NULL;
-				char buffer[] = "hi I am compute server control port\n";
-				char receive_buffer[1024];
+				char buffer[] = "hi I am compute server control port";
+				//char recv_buffer[atoi(argv[7])];
 				
 				while(1){
 					//接受 client端連線
@@ -96,31 +121,54 @@ int main(int argc, char *argv[]){
 					send(client->fd, buffer, sizeof(buffer), 0); 
 
 					while(1){
-						if(recv(client->fd, receive_buffer, sizeof(receive_buffer), 0) == 0){
-							printf("connect close\n");
+						if(recv(client->fd, recv_buffer, atoi(argv[7]), 0) == 0){
+							log_head(&log_data);
+							printf("connect close : %s %d\n", client->ip, client->port);
 							break;
 						} 
 
 
 						//去除收到的訊息尾巴的換行或回車符
-						receive_buffer[strcspn(receive_buffer, "\n")] = '\0';
-						receive_buffer[strcspn(receive_buffer, "\r")] = '\0';
+						recv_buffer[strcspn(recv_buffer, "\n")] = '\0';
+						recv_buffer[strcspn(recv_buffer, "\r")] = '\0';
 						
-						printf("%s\n", receive_buffer);
+						printf("%s\n", recv_buffer);
 						
-						if(strcmp(receive_buffer, "exit") == 0){
+						if(strcmp(recv_buffer, "exit") == 0){
 							close(client->fd);
 							free(client);
+
+							free(recv_buffer);
+							free(send_buffer);
 
 							union sigval value;
 							value.sival_int = 0;
 							sigqueue(receive_pid, SIGRTMIN, value);
 							sigqueue(present_pid, SIGRTMIN, value);
+							sigqueue(compute_pid, SIGRTMIN, value);
 
 							//等待其它進程結束
 							waitpid(receive_pid, &process_status, 0);
 							waitpid(present_pid, &process_status, 0);
 							waitpid(compute_pid, &process_status, 0);
+							
+							//關閉消息隊列
+							if(mq_close(receive_to_compute) == -1){
+								perror("mq_close");
+							}
+							
+							if(mq_close(compute_to_present) == -1){
+								perror("mq_close");
+							}
+
+							if(mq_unlink("/receive_to_compute") == -1){
+								perror("mq_unlink");
+							}
+							
+							if(mq_unlink("/compute_to_present") == -1){
+								perror("mq_unlink");
+							}
+
 							return 0;
 						}
 					}

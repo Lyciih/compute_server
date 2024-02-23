@@ -107,4 +107,9 @@ obj/present.o: src/present.c /usr/include/stdc-predef.h include/present.h \
  /usr/include/x86_64-linux-gnu/bits/ss_flags.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h \
  /usr/include/x86_64-linux-gnu/bits/sigthread.h \
- /usr/include/x86_64-linux-gnu/bits/signal_ext.h include/network_utils.h
+ /usr/include/x86_64-linux-gnu/bits/signal_ext.h /usr/include/mqueue.h \
+ /usr/include/fcntl.h /usr/include/x86_64-linux-gnu/bits/fcntl.h \
+ /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h \
+ /usr/include/linux/falloc.h /usr/include/x86_64-linux-gnu/bits/stat.h \
+ /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
+ /usr/include/x86_64-linux-gnu/bits/mqueue.h include/network_utils.h

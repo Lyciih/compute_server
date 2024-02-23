@@ -2,6 +2,10 @@
 
 extern client_t *client;
 extern log_data_t log_data;
+extern char *recv_buffer;
+extern char *send_buffer;
+extern mqd_t receive_to_compute;
+extern unsigned int prio;
 
 //receive進程
 int receive(int log_on, char *argv[]){
@@ -17,8 +21,25 @@ int receive(int log_on, char *argv[]){
 	}
 
 
-	//註冊信號處理函數
-	//set_signal_handle();
+
+	//消息隊列
+	if(mq_send(receive_to_compute, "ha", sizeof("ha"), 0) == -1){
+		log_head(&log_data);
+		perror("mq_send");
+	}
+
+	if(mq_receive(receive_to_compute, recv_buffer, atoi(argv[7]), &prio) == -1){
+		log_head(&log_data);
+		perror("mq_receive");
+	}
+	else{
+		log_head(&log_data);
+		printf("%s\n", recv_buffer);
+		fflush(stdout);
+	}
+
+
+
 
 	//取得 listen socket
 	int listen_fd = get_listen_socket(&log_data, 1);
@@ -31,8 +52,8 @@ int receive(int log_on, char *argv[]){
 	
 
 
-	char buffer[] = "hi I am compute server receive port\n";
-	char recv_buffer[1024];
+	char buffer[] = "hi I am compute server receive port";
+
 
 	while(1){
 		//接受 client端連線
@@ -41,8 +62,22 @@ int receive(int log_on, char *argv[]){
 			send(client->fd, buffer, sizeof(buffer), 0);
 
 			while(1){
-				recv(client->fd, recv_buffer, sizeof(recv_buffer), 0);
-				printf("%s", recv_buffer);
+				if(recv(client->fd, recv_buffer, atoi(argv[7]), 0) == 0){
+					log_head(&log_data);
+					printf("connect close : %s %d\n", client->ip, client->port);
+					break;
+				}
+				else{
+	
+					recv_buffer[strcspn(recv_buffer, "\n")] = '\0';
+					recv_buffer[strcspn(recv_buffer, "\r")] = '\0';
+					
+
+					if(mq_send(receive_to_compute, recv_buffer, atoi(argv[7]), 0) == -1){
+						log_head(&log_data);
+						perror("mq_send");
+					}
+				}
 			}
 		}
 	}
