@@ -22,6 +22,7 @@ clean:
 	rm -f flow_compute_server obj/*.o obj/*.d
 
 run: 
+#有必要的話 先調整 sysctl -w fs.mqueue.msg_max=4096
 	./flow_compute_server 1 192.168.2.2 1230 1231 1232 700 1024
 
 re:

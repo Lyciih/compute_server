@@ -54,6 +54,10 @@ void signal_handle(int signal, siginfo_t *info, void *ctx){
 
 
 
+void sigpipe_handle(int signo){
+	printf("123\n");
+	fflush(stdout);
+}
 
 
 
@@ -64,4 +68,5 @@ void set_signal_handle(){
 	action.sa_flags = SA_SIGINFO;
 	
 	sigaction(SIGRTMIN, &action, NULL);
+	signal(SIGPIPE, sigpipe_handle);
 }

@@ -63,6 +63,10 @@ int present(int log_on, char *argv[]){
 		if(client != NULL){
 			send(client->fd, buffer, sizeof(buffer), 0);
 
+			
+			//log_head(&log_data);
+			//printf("1 have data: %d\n", have_data);
+
 			while(1){
 				if(have_data == 0){
 					if(mq_receive(compute_to_present, recv_buffer, atoi(argv[7]), &prio) == -1){
@@ -71,24 +75,34 @@ int present(int log_on, char *argv[]){
 					}
 					else{
 						have_data = 1;
+						//log_head(&log_data);
+						//printf("2 have data: %d\n", have_data);
 					}
 				}
 				else{
+
 					send(client->fd, "test", sizeof("test"), 0);
-					if(recv(client->fd, client_receive, atoi(argv[7]), 0) == 0){
+					
+					//log_head(&log_data);
+					//printf("3 have data: %d\n", have_data);
+
+					if(recv(client->fd, client_receive, atoi(argv[7]), 0) <= 0){
 						log_head(&log_data);
 						fflush(stdout);
-						perror("connect close");
+						perror("connect close at receive");
 						break;
 					}
 					else{
+						//log_head(&log_data);
+						//printf("4 data: %s\n", client_receive);
+						
 						client_receive[strcspn(client_receive, "\n")] = '\0';
 						client_receive[strcspn(client_receive, "\r")] = '\0';
 
 						if(strcmp(client_receive, "ready") == 0){
 							if(send(client->fd, recv_buffer, atoi(argv[7]), 0) == -1){
 								log_head(&log_data);
-								perror("connect close");
+								perror("connect close at send");
 								break;
 							}
 							else{
